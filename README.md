@@ -87,3 +87,91 @@ struct ContentView: View {
     ContentView()
 }
 ```
+
+# Project 2 LengthConverter: Apply Length Conversion in between of "m", "km", "feet", "inches", "yards", and "miles".
+
+# Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/bTncWYRVUGA?feature=share)
+
+# Code:
+```Swift
+//
+//  ContentView.swift
+//  LengthConverter
+//
+//  Created by Suqing Liu on 2025-04-25.
+//
+
+import SwiftUI
+
+struct ContentView: View {
+    private let units = ["m", "km", "feet", "inches", "yards", "miles"]
+    @State private var inUnit: String = "m"
+    @State private var outUnit: String = "km"
+    @State private var inLength: Double = 0
+    
+    private func toMetres(_ value: Double, unit: String) -> Double {
+        switch unit {
+        case "m":      return value
+        case "km":     return value * 1_000
+        case "feet":   return value * 0.3048
+        case "inches": return value * 0.0254
+        case "yards":  return value * 0.9144
+        case "miles":  return value * 1_609.344
+        default:       return value
+        }
+    }
+    
+    private func fromMetres(_ value: Double, unit: String) -> Double {
+        switch unit {
+        case "m":      return value
+        case "km":     return value / 1_000
+        case "feet":   return value / 0.3048
+        case "inches": return value / 0.0254
+        case "yards":  return value / 0.9144
+        case "miles":  return value / 1_609.344
+        default:       return value
+        }
+    }
+    
+    private var converted: Double {
+        let metres = toMetres(inLength, unit: inUnit)
+        return fromMetres(metres, unit: outUnit)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Input") {
+                    TextField("Length",
+                              value: $inLength,
+                              format: .number)
+                        .keyboardType(.decimalPad)
+                    
+                    Picker("From", selection: $inUnit) {
+                        ForEach(units, id: \.self) { Text($0.capitalized) }
+                    }
+                    .pickerStyle(.segmented)
+                }
+                
+                Section("Output") {
+                    Text(converted.formatted())
+                    
+                    Picker("To", selection: $outUnit) {
+                        ForEach(units, id: \.self) { Text($0.capitalized) }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+            .navigationTitle("Length Converter")
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+}
+
+```
+
+
+
