@@ -545,4 +545,194 @@ struct ContentView: View {
     ContentView()
 }
 ```
+# Project 6 Animation Multiplication Table Quizer, from 2 to 9
 
+# Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/aNeIsPhZa0Q)
+
+# Code:
+```Swift
+import SwiftUI
+
+// MARK: - Data Model
+struct Question: Identifiable {
+    let id = UUID()
+    let text: String
+    let answer: Int
+}
+
+// MARK: - Root View
+struct ContentView: View {
+    
+    enum AppState: Equatable {
+        case settings
+        case playing
+        case finished(score: Int, total: Int)
+    }
+
+    // Game-level state
+    @State private var appState: AppState = .settings
+    @State private var maxTable = 12
+    @State private var questionCount = 10
+
+    // Round-to-round state
+    @State private var questions: [Question] = []
+    @State private var currentIndex = 0
+    @State private var userAnswer = ""
+    @State private var score = 0
+
+    var body: some View {
+        Group {
+            switch appState {
+            case .settings:
+                SettingsView(
+                    maxTable: $maxTable,
+                    questionCount: $questionCount,
+                    startAction: startGame
+                )
+
+            case .playing:
+                GameView(
+                    question: questions[currentIndex],
+                    index: currentIndex + 1,
+                    total: questions.count,
+                    userAnswer: $userAnswer,
+                    submitAction: submitAnswer
+                )
+
+            case .finished(let finalScore, let total):
+                ResultView(score: finalScore, total: total) {
+                    appState = .settings
+                }
+            }
+        }
+        .animation(.default, value: appState)
+    }
+
+    // MARK: - Game Flow Helpers
+    private func startGame() {
+        score = 0
+        userAnswer = ""
+        currentIndex = 0
+        questions = makeQuestions()
+        appState = .playing
+    }
+
+    private func submitAnswer() {
+        guard let answerInt = Int(userAnswer) else { return }
+        if answerInt == questions[currentIndex].answer {
+            score += 1
+        }
+        userAnswer = ""
+        currentIndex += 1
+        if currentIndex == questions.count {
+            appState = .finished(score: score, total: questions.count)
+        }
+    }
+
+    private func makeQuestions() -> [Question] {
+        var output: [Question] = []
+        let range = 2...maxTable
+        while output.count < questionCount {
+            let left  = Int.random(in: range)
+            let right = Int.random(in: range)
+            output.append(
+                Question(
+                    text: "\(left) × \(right) = ?",
+                    answer: left * right
+                )
+            )
+        }
+        return output
+    }
+}
+
+// MARK: - Settings Screen
+struct SettingsView: View {
+    @Binding var maxTable: Int
+    @Binding var questionCount: Int
+    var startAction: () -> Void
+
+    private let questionOptions = [5, 10, 20]
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Tables up to")) {
+                    Stepper(value: $maxTable, in: 2...12) {
+                        Text("\(maxTable)")
+                    }
+                }
+                Section(header: Text("Number of questions")) {
+                    Picker("Question count", selection: $questionCount) {
+                        ForEach(questionOptions, id: \.self) {
+                            Text("\($0)")
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                Section {
+                    Button("Start Practice", action: startAction)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+            .navigationTitle("Multiplication Practice")
+        }
+    }
+}
+
+// MARK: - Game Screen
+struct GameView: View {
+    let question: Question
+    let index: Int
+    let total: Int
+    @Binding var userAnswer: String
+    var submitAction: () -> Void
+
+    var body: some View {
+        VStack(spacing: 30) {
+            Text("Question \(index) / \(total)")
+                .font(.headline)
+
+            Text(question.text)
+                .font(.largeTitle.weight(.bold))
+
+            TextField("Your answer", text: $userAnswer)
+                .keyboardType(.numberPad)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .frame(width: 150)
+                .multilineTextAlignment(.center)
+
+            Button("Submit", action: submitAction)
+                .buttonStyle(.borderedProminent)
+        }
+        .padding()
+    }
+}
+
+// MARK: - Result Screen
+struct ResultView: View {
+    let score: Int
+    let total: Int
+    var playAgain: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Great job!")
+                .font(.largeTitle.bold())
+
+            Text("You scored \(score) out of \(total)")
+                .font(.title2)
+
+            Button("Play Again", action: playAgain)
+                .buttonStyle(.borderedProminent)
+        }
+        .padding()
+    }
+}
+
+
+
+#Preview {
+    ContentView()
+}
+```
