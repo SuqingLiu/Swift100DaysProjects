@@ -175,9 +175,9 @@ struct ContentView: View {
 
 # Project 3 GuessFlgas: Guess the Flag of a country
 
-# Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/vNgz5aPvqzY?feature=share)
+# Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/oefurXsVJVQ?feature=share)
 
-# Code:
+# Code: (Requires Model Training with apple's Create ML, csv file is provided in the handout)
 ```Swift
 //
 //  ContentView.swift
@@ -291,6 +291,105 @@ struct ContentView: View {
 }
 
 ```
+# Project 4 BetterRest, a coffee drinking tracker to recommend you when to sleep based on Machine Learning
 
+# Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/vNgz5aPvqzY?feature=share)
+
+# Code:
+```Swift
+//
+//  ContentView.swift
+//  BetterRest
+//
+//  Created by Suqing Liu on 2025-04-25.
+//
+
+import CoreML
+import SwiftUI
+
+struct ContentView: View {
+    // MARK: – State
+    @State private var wakeUp        = Date.now
+    @State private var sleepAmount   = 8.0
+    @State private var coffeeAmount  = 1          // 1‥20 cups
+
+    // MARK: – Computed bedtime
+    private var idealBedtime: Date? {
+        do {
+            let model = try SleepCalculator(configuration: .init())
+            let comps = Calendar.current.dateComponents([.hour, .minute], from: wakeUp)
+            let seconds = (comps.hour ?? 0) * 3_600 + (comps.minute ?? 0) * 60
+            let pred = try model.prediction(
+                wake: Double(seconds),
+                estimatedSleep: sleepAmount,
+                coffee: Double(coffeeAmount)
+            )
+            return wakeUp - pred.actualSleep
+        } catch {
+            return nil
+        }
+    }
+
+    // MARK: – UI
+    var body: some View {
+        NavigationStack {
+            Form {
+                // Wake-up time
+                Section("When do you want to wake up?") {
+                    HStack {
+                        Spacer()
+                        DatePicker(
+                            "",
+                            selection: $wakeUp,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .labelsHidden()
+                        .datePickerStyle(.wheel)          // big wheel selector
+                        .font(.title2)                    // larger digits
+                        .frame(maxWidth: .infinity)       // centered
+                        Spacer()
+                    }
+                }
+
+                // Desired sleep
+                Section("Desired amount of sleep") {
+                    Stepper(
+                        "\(sleepAmount.formatted()) hours",
+                        value: $sleepAmount,
+                        in: 4...12,
+                        step: 0.25
+                    )
+                }
+
+                // Coffee intake (now a Stepper)
+                Section("Daily coffee intake") {
+                    Stepper(
+                        "\(coffeeAmount) cup\(coffeeAmount == 1 ? "" : "s")",
+                        value: $coffeeAmount,
+                        in: 1...20
+                    )
+                }
+
+                // Recommended bedtime
+                Section("Recommended bedtime") {
+                    Text(
+                        idealBedtime?.formatted(date: .omitted, time: .shortened)
+                        ?? "—"
+                    )
+                    .font(.system(size: 40, weight: .bold))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 8)
+                }
+            }
+            .navigationTitle("BetterRest")
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+}
+
+```
 
 
