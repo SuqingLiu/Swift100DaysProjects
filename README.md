@@ -391,5 +391,158 @@ struct ContentView: View {
 }
 
 ```
+# Project 5 WordScramble, a word combining game, try to build as many words with 8-character words.
 
+# Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/rdzDFe0pmgc?feature=share)
+
+# Code:
+```Swift
+//
+//  ContentView.swift
+//  WordScramble
+//
+//  Created by Suqing Liu on 2025-04-26.
+//
+
+import SwiftUI
+
+struct ContentView: View {
+    @State private var usedWords = [String]()
+    @State private var rootWord = ""
+    @State private var newWord = ""
+    
+    @State private var errorTitle = ""
+    @State private var errorMessage = ""
+    @State private var showingError = false
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    TextField("Enter your word", text: $newWord)
+                        .textInputAutocapitalization(.never)
+
+                }
+
+                Section {
+                    ForEach(usedWords, id: \.self) { word in
+                        HStack {
+                            Image(systemName: "\(word.count).circle")
+                            Text(word)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(rootWord)
+            .onSubmit(addNewWord)
+            .onAppear(perform: startGame)
+            .alert(errorTitle, isPresented: $showingError) {
+                Button("OK") { }
+            } message: {
+                Text(errorMessage)
+            }
+            .toolbar {
+                Button("Restart") {
+                    startGame()
+                }
+            }
+        }
+    }
+    
+    func addNewWord() {
+        // lowercase and trim the word, to make sure we don't add duplicate words with case differences
+        let answer = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // exit if the remaining string is empty
+        guard answer.count > 0 else { return }
+        
+        guard answer.count >= 3 else {
+            wordError(title: "Word too short", message: "Words must be at least 3 letters long.")
+            return
+        }
+        
+        guard answer != rootWord else {
+            wordError(title: "Word same as root word", message: "You can't just use the original word!")
+            return
+        }
+
+        guard isOriginal(word: answer) else {
+            wordError(title: "Word used already", message: "Be more original")
+            return
+        }
+
+        guard isPossible(word: answer) else {
+            wordError(title: "Word not possible", message: "You can't spell that word from '\(rootWord)'!")
+            return
+        }
+
+        guard isReal(word: answer) else {
+            wordError(title: "Word not recognized", message: "You can't just make them up, you know!")
+            return
+        }
+
+        withAnimation {
+            usedWords.insert(answer, at: 0)
+        }
+        newWord = ""
+    }
+    
+    func startGame() {
+        usedWords = [String]()
+        newWord = ""
+        
+        if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
+            if let data = try? Data(contentsOf: startWordsURL) {
+                let startWords = String(decoding: data, as: UTF8.self)
+                
+                let allWords = startWords.components(separatedBy: .newlines)
+                
+                rootWord = allWords.randomElement() ?? "silkworm"
+                return
+            }
+        }
+        fatalError("Could not load start.txt from bundle.")
+    }
+    
+    func isOriginal(word: String) -> Bool {
+        !usedWords.contains(word)
+    }
+    
+    func isPossible(word: String) -> Bool {
+        // Build frequency table for rootWord  ➜  O(|rootWord|)
+        var available = [Character: Int]()
+        for ch in rootWord {
+            available[ch, default: 0] += 1
+        }
+        
+        // Check each letter in word           ➜  O(|word|)
+        for ch in word {
+            guard let remaining = available[ch], remaining > 0 else {
+                return false          // letter missing or exhausted
+            }
+            available[ch] = remaining - 1
+        }
+        return true
+    }
+    
+    func isReal(word: String) -> Bool {
+        let checker = UITextChecker()
+        let range = NSRange(location: 0, length: word.utf16.count)
+        let misspelledRange = checker.rangeOfMisspelledWord(in: word, range: range, startingAt: 0, wrap: false, language: "en")
+
+        return misspelledRange.location == NSNotFound
+    }
+    
+    func wordError(title: String, message: String) {
+        errorTitle = title
+        errorMessage = message
+        showingError = true
+    }
+
+}
+
+#Preview {
+    ContentView()
+}
+```
 
