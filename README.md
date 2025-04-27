@@ -919,3 +919,8 @@ struct AddView: View {
 // MARK: - Preview
 #Preview { ContentView() }
 ```
+# Project 8 Moonshot: View the history of past moon landings
+
+# Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/Itu2ka4_y6I?feature=share)
+
+# Code: Due to the increasing complexity of the code structure, codes are stored in the folder for you to find
