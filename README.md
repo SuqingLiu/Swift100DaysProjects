@@ -736,3 +736,186 @@ struct ResultView: View {
     ContentView()
 }
 ```
+# Project 7 iExpense: Expence Tracker for Business and Personal Items.
+
+# Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/Wa1JffUAw_8?feature=share)
+
+# Code:
+```Swift
+//
+//  ContentView.swift
+//  iExpense
+//
+
+import SwiftUI
+import Observation               // ⬅️ for @Observable
+
+
+// MARK: - Model
+struct ExpenseItem: Identifiable, Codable {
+    var id = UUID()
+    let name: String
+    let type: String          // "Business" or "Personal"
+    let amount: Double
+}
+
+@Observable
+class Expenses {
+    var items = [ExpenseItem]() {
+        didSet { save() }
+    }
+
+    init() { load() }
+
+    // MARK: - Persistence
+    private func load() {
+        if let data = UserDefaults.standard.data(forKey: "Items"),
+           let decoded = try? JSONDecoder().decode([ExpenseItem].self, from: data) {
+            items = decoded
+        }
+    }
+
+    private func save() {
+        if let encoded = try? JSONEncoder().encode(items) {
+            UserDefaults.standard.set(encoded, forKey: "Items")
+        }
+    }
+}
+
+// MARK: - Root View
+struct ContentView: View {
+    // state
+    @State private var expenses = Expenses()
+    @State private var showingAddExpense = false
+
+    // convenience
+    private let currencyCode = Locale.current.currency?.identifier ?? "USD"
+
+    // pre-filtered arrays for the two sections
+    private var personalItems: [ExpenseItem] {
+        expenses.items.filter { $0.type == "Personal" }
+    }
+    private var businessItems: [ExpenseItem] {
+        expenses.items.filter { $0.type == "Business" }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                // PERSONAL
+                Section("Personal") {
+                    ForEach(personalItems) { itemRow($0) }
+                        .onDelete { delete(personalItems, at: $0) }
+                }
+
+                // BUSINESS
+                Section("Business") {
+                    ForEach(businessItems) { itemRow($0) }
+                        .onDelete { delete(businessItems, at: $0) }
+                }
+            }
+            .navigationTitle("iExpense")
+            .toolbar {
+                Button {
+                    showingAddExpense = true
+                } label: {
+                    Label("Add Expense", systemImage: "plus")
+                }
+            }
+            .toolbar {
+                Button(role: .destructive) {
+                    resetData()
+                } label: {
+                    Label("Reset Data", systemImage: "trash")
+                }
+            }
+            .sheet(isPresented: $showingAddExpense) {
+                AddView(expenses: expenses, currencyCode: currencyCode)
+            }
+        }
+    }
+    
+    private func resetData() {
+        expenses.items.removeAll()                        // clears UI
+        UserDefaults.standard.removeObject(forKey: "Items") // clears storage
+    }
+
+    // MARK: - Row builder
+    @ViewBuilder
+    private func itemRow(_ item: ExpenseItem) -> some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(item.name)
+                    .font(.headline)
+                Text(item.type)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(item.amount, format: .currency(code: currencyCode))
+                .foregroundStyle(color(for: item.amount))   // ⬅️ band-based style
+        }
+    }
+
+    // MARK: - Helpers
+    private func color(for amount: Double) -> Color {
+        switch amount {
+        case ..<10:   return .green      // <$10
+        case ..<100:  return .orange     // $10–$99.99
+        default:      return .red        // ≥$100
+        }
+    }
+
+    /// Deletes the selected offsets in the *filtered* array from the master array.
+    private func delete(_ sectionItems: [ExpenseItem], at offsets: IndexSet) {
+        for offset in offsets {
+            let item = sectionItems[offset]
+            if let realIndex = expenses.items.firstIndex(where: { $0.id == item.id }) {
+                expenses.items.remove(at: realIndex)
+            }
+        }
+    }
+}
+
+// MARK: - Add-expense sheet
+struct AddView: View {
+    @Environment(\.dismiss) var dismiss
+
+    @State private var name = ""
+    @State private var type = "Personal"
+    @State private var amount = 0.0
+
+    var expenses: Expenses
+    let currencyCode: String
+
+    let types = ["Business", "Personal"]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("Name", text: $name)
+
+                Picker("Type", selection: $type) {
+                    ForEach(types, id: \.self, content: Text.init)
+                }
+
+                TextField("Amount",
+                          value: $amount,
+                          format: .currency(code: currencyCode))
+                    .keyboardType(.decimalPad)
+            }
+            .navigationTitle("Add New Expense")
+            .toolbar {
+                Button("Save") {
+                    let item = ExpenseItem(name: name, type: type, amount: amount)
+                    expenses.items.append(item)
+                    dismiss()
+                }
+                .disabled(name.isEmpty)
+            }
+        }
+    }
+}
+
+// MARK: - Preview
+#Preview { ContentView() }
+```
