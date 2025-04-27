@@ -923,4 +923,4 @@ struct AddView: View {
 
 # Video:[▶️ Watch Demo Video on YouTube](https://youtube.com/shorts/Itu2ka4_y6I?feature=share)
 
-# Code: Due to the increasing complexity of the code structure, codes are stored in the folder for you to find
+# Code: Due to the increasing complexity of the code structure, codes are stored in the main folder for you to find.
